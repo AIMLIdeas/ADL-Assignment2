@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generative Models Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Generative Models Training Dashboard</h1>
+        
+        <div class="queue-status">
+            <h2>🖼️ Data Visualization</h2>
+            <p>Explore CelebA dataset with different filters</p>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="visualizeData('training_samples')">📸 View Training Samples</button>
+                <button class="btn btn-primary" onclick="visualizeData('smiling_faces')">😊 View Smiling Faces</button>
+                <button class="btn btn-primary" onclick="visualizeData('filtered_samples')">👓 View Filtered Samples</button>
+            </div>
+            <div id="vizStatus" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; display: none;"></div>
+        </div>
+        
+        <div class="queue-status">
+            <h2>⚙️ Training Queue Status</h2>
+            <div id="queueStatus">
+                <p>Queue is idle. Add models to start training.</p>
+            </div>
+            <div class="controls">
+                <button class="btn btn-success" onclick="startQueue()">▶️ Start Queue</button>
+                <button class="btn btn-danger" onclick="stopQueue()">⏹️ Stop Queue</button>
+            </div>
+        </div>
+        
+        <div class="models-grid">
+            <!-- VAE Card -->
+            <div class="model-card">
+                <h2>🔵 VAE (Vanilla)</h2>
+                <p>Standard Variational Autoencoder for face generation</p>
+                
+                <div class="input-group">
+                    <label>Latent Dimension:</label>
+                    <input type="number" id="vae_latent_dim" value="128">
+                </div>
+                <div class="input-group">
+                    <label>Number of Epochs:</label>
+                    <input type="number" id="vae_epochs" value="20">
+                </div>
+                <div class="input-group">
+                    <label>Learning Rate:</label>
+                    <input type="number" id="vae_lr" value="0.0003" step="0.0001">
+                </div>
+                <div class="input-group">
+                    <label>Batch Size:</label>
+                    <input type="number" id="vae_batch_size" value="128">
+                </div>
+                
+                <button class="btn btn-primary" onclick="queueModel('VAE')">Add to Queue</button>
+            </div>
+            
+            <!-- Beta-VAE Card -->
+            <div class="model-card">
+                <h2>🟣 Beta-VAE</h2>
+                <p>VAE with disentangled representations (β=4)</p>
+                
+                <div class="input-group">
+                    <label>Latent Dimension:</label>
+                    <input type="number" id="betavae_latent_dim" value="128">
+                </div>
+                <div class="input-group">
+                    <label>Number of Epochs:</label>
+                    <input type="number" id="betavae_epochs" value="20">
+                </div>
+                <div class="input-group">
+                    <label>Learning Rate:</label>
+                    <input type="number" id="betavae_lr" value="0.0003" step="0.0001">
+                </div>
+                <div class="input-group">
+                    <label>Batch Size:</label>
+                    <input type="number" id="betavae_batch_size" value="128">
+                </div>
+                <div class="input-group">
+                    <label>Beta Value:</label>
+                    <input type="number" id="betavae_beta" value="4.0" step="0.1">
+                </div>
+                
+                <button class="btn btn-primary" onclick="queueModel('Beta-VAE')">Add to Queue</button>
+            </div>
+            
+            <!-- DCGAN Card -->
+            <div class="model-card">
+                <h2>🟢 DCGAN</h2>
+                <p>Deep Convolutional GAN for high-quality faces</p>
+                
+                <div class="input-group">
+                    <label>Latent Dimension:</label>
+                    <input type="number" id="dcgan_latent_dim" value="100">
+                </div>
+                <div class="input-group">
+                    <label>Number of Epochs:</label>
+                    <input type="number" id="dcgan_epochs" value="20">
+                </div>
+                <div class="input-group">
+                    <label>Learning Rate:</label>
+                    <input type="number" id="dcgan_lr" value="0.0002" step="0.0001">
+                </div>
+                <div class="input-group">
+                    <label>Batch Size:</label>
+                    <input type="number" id="dcgan_batch_size" value="128">
+                </div>
+                
+                <button class="btn btn-primary" onclick="queueModel('DCGAN')">Add to Queue</button>
+            </div>
+            
+            <!-- VQ-VAE Card -->
+            <div class="model-card">
+                <h2>🟡 VQ-VAE</h2>
+                <p>Vector Quantized VAE with discrete latent space</p>
+                
+                <div class="input-group">
+                    <label>Codebook Size (K):</label>
+                    <input type="number" id="vqvae_codebook_size" value="512">
+                </div>
+                <div class="input-group">
+                    <label>Number of Epochs:</label>
+                    <input type="number" id="vqvae_epochs" value="20">
+                </div>
+                <div class="input-group">
+                    <label>Learning Rate:</label>
+                    <input type="number" id="vqvae_lr" value="0.0002" step="0.0001">
+                </div>
+                <div class="input-group">
+                    <label>Batch Size:</label>
+                    <input type="number" id="vqvae_batch_size" value="128">
+                </div>
+                
+                <button class="btn btn-primary" onclick="queueModel('VQ-VAE')">Add to Queue</button>
+            </div>
+        </div>
+        
+        <div class="comparison-table">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">📊 Model Comparison</h2>
+                <button class="btn btn-success" onclick="refreshComparison()" style="width: auto; padding: 10px 20px;">
+                    🔄 Refresh
+                </button>
+            </div>
+            <div id="comparisonStatus" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; display: none;"></div>
+            <table id="comparisonTable">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Type</th>
+                        <th>Latent Space</th>
+                        <th>Quality</th>
+                        <th>Diversity</th>
+                        <th>Control</th>
+                        <th>Training Speed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>VAE</strong></td>
+                        <td>Autoencoder</td>
+                        <td>Continuous</td>
+                        <td><span class="rating">★★★☆☆</span></td>
+                        <td><span class="rating">★★★★☆</span></td>
+                        <td><span class="rating">★★★★☆</span></td>
+                        <td><span class="rating">★★★★★</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Beta-VAE</strong></td>
+                        <td>Autoencoder</td>
+                        <td>Disentangled</td>
+                        <td><span class="rating">★★★☆☆</span></td>
+                        <td><span class="rating">★★★★☆</span></td>
+                        <td><span class="rating">★★★★★</span></td>
+                        <td><span class="rating">★★★★★</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>DCGAN</strong></td>
+                        <td>GAN</td>
+                        <td>Continuous</td>
+                        <td><span class="rating">★★★★☆</span></td>
+                        <td><span class="rating">★★★☆☆</span></td>
+                        <td><span class="rating">★★☆☆☆</span></td>
+                        <td><span class="rating">★★★☆☆</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>VQ-VAE</strong></td>
+                        <td>Autoencoder</td>
+                        <td>Discrete</td>
+                        <td><span class="rating">★★★★★</span></td>
+                        <td><span class="rating">★★★★★</span></td>
+                        <td><span class="rating">★★★★☆</span></td>
+                        <td><span class="rating">★★★★☆</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Exit Section -->
+        <div class="exit-section">
+            <h2>🔄 Dashboard Control</h2>
+            <p>Restart the dashboard to refresh the UI or exit to shutdown all processes.</p>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="restartDashboard()" style="max-width: 300px;">
+                    🔄 Restart Dashboard
+                </button>
+                <button class="btn btn-warning" onclick="showExitModal()" style="max-width: 300px;">
+                    🛑 Exit Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Exit Confirmation Modal -->
+    <div id="exitModal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Confirm Exit</h3>
+            <p>Are you sure you want to exit the dashboard?<br><br>
+            <strong>This will:</strong><br>
+            • Stop all running training jobs<br>
+            • Clear the training queue<br>
+            • Shutdown the web server</p>
+            <div class="modal-buttons">
+                <button class="btn btn-danger" onclick="exitApplication()" style="width: auto;">Yes, Exit</button>
+                <button class="btn btn-primary" onclick="closeExitModal()" style="width: auto;">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
