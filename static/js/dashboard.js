@@ -1,3 +1,43 @@
+// Tab switching functionality
+function switchTab(tabId) {
+    // Hide all tab panes
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    tabPanes.forEach(pane => {
+        pane.classList.remove('active');
+    });
+    
+    // Remove active class from all tab buttons
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // Show selected tab pane
+    const selectedPane = document.getElementById(tabId);
+    if (selectedPane) {
+        selectedPane.classList.add('active');
+    }
+    
+    // Activate corresponding button
+    const activeButton = Array.from(tabButtons).find(button => 
+        button.getAttribute('onclick').includes(tabId)
+    );
+    if (activeButton) {
+        activeButton.classList.add('active');
+    }
+    
+    // Store active tab in localStorage
+    localStorage.setItem('activeTab', tabId);
+}
+
+// Restore active tab on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTab = localStorage.getItem('activeTab');
+    if (savedTab) {
+        switchTab(savedTab);
+    }
+});
+
 function queueModel(modelName) {
     const config = {};
     

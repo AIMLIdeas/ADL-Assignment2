@@ -8,29 +8,69 @@
     <div class="container">
         <h1>🎨 Generative Models Training Dashboard</h1>
         
-        <div class="queue-status">
-            <h2>🖼️ Data Visualization</h2>
-            <p>Explore CelebA dataset with different filters</p>
-            <div class="controls">
-                <button class="btn btn-primary" onclick="visualizeData('training_samples')">📸 View Training Samples</button>
-                <button class="btn btn-primary" onclick="visualizeData('smiling_faces')">😊 View Smiling Faces</button>
-                <button class="btn btn-primary" onclick="visualizeData('filtered_samples')">👓 View Filtered Samples</button>
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('control-panel')">
+                    <span class="tab-icon">⚙️</span> Control Panel
+                </button>
+                <button class="tab-button" onclick="switchTab('visualization')">
+                    <span class="tab-icon">🖼️</span> Visualization
+                </button>
+                <button class="tab-button" onclick="switchTab('model-training')">
+                    <span class="tab-icon">🚀</span> Model Training
+                </button>
+                <button class="tab-button" onclick="switchTab('model-comparison')">
+                    <span class="tab-icon">📊</span> Model Comparison
+                </button>
             </div>
-            <div id="vizStatus" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; display: none;"></div>
-        </div>
-        
-        <div class="queue-status">
-            <h2>⚙️ Training Queue Status</h2>
-            <div id="queueStatus">
-                <p>Queue is idle. Add models to start training.</p>
-            </div>
-            <div class="controls">
-                <button class="btn btn-success" onclick="startQueue()">▶️ Start Queue</button>
-                <button class="btn btn-danger" onclick="stopQueue()">⏹️ Stop Queue</button>
-            </div>
-        </div>
-        
-        <div class="models-grid">
+            
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Control Panel Tab -->
+                <div id="control-panel" class="tab-pane active">
+                    <div class="exit-section">
+                        <h2>🔄 Dashboard Control</h2>
+                        <p>Restart the dashboard to refresh the UI or exit to shutdown all processes.</p>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="restartDashboard()" style="max-width: 300px;">
+                                🔄 Restart Dashboard
+                            </button>
+                            <button class="btn btn-warning" onclick="showExitModal()" style="max-width: 300px;">
+                                🛑 Exit Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visualization Tab -->
+                <div id="visualization" class="tab-pane">
+                    <div class="queue-status">
+                        <h2>🖼️ Data Visualization</h2>
+                        <p>Explore CelebA dataset with different filters</p>
+                        <div class="controls">
+                            <button class="btn btn-primary" onclick="visualizeData('training_samples')">📸 View Training Samples</button>
+                            <button class="btn btn-primary" onclick="visualizeData('smiling_faces')">😊 View Smiling Faces</button>
+                            <button class="btn btn-primary" onclick="visualizeData('filtered_samples')">👓 View Filtered Samples</button>
+                        </div>
+                        <div id="vizStatus" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; display: none;"></div>
+                    </div>
+                </div>
+                
+                <!-- Model Training Tab -->
+                <div id="model-training" class="tab-pane">
+                    <div class="queue-status">
+                        <h2>⚙️ Training Queue Status</h2>
+                        <div id="queueStatus">
+                            <p>Queue is idle. Add models to start training.</p>
+                        </div>
+                        <div class="controls">
+                            <button class="btn btn-success" onclick="startQueue()">▶️ Start Queue</button>
+                            <button class="btn btn-danger" onclick="stopQueue()">⏹️ Stop Queue</button>
+                        </div>
+                    </div>
+                    
+                    <div class="models-grid">
             <!-- VAE Card -->
             <div class="model-card">
                 <h2>🔵 VAE (Vanilla)</h2>
@@ -135,8 +175,11 @@
                 <button class="btn btn-primary" onclick="queueModel('VQ-VAE')">Add to Queue</button>
             </div>
         </div>
-        
-        <div class="comparison-table">
+                </div>
+                
+                <!-- Model Comparison Tab -->
+                <div id="model-comparison" class="tab-pane">
+                    <div class="comparison-table">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0;">📊 Model Comparison</h2>
                 <button class="btn btn-success" onclick="refreshComparison()" style="width: auto; padding: 10px 20px;">
@@ -196,18 +239,7 @@
                 </tbody>
             </table>
         </div>
-        
-        <!-- Exit Section -->
-        <div class="exit-section">
-            <h2>🔄 Dashboard Control</h2>
-            <p>Restart the dashboard to refresh the UI or exit to shutdown all processes.</p>
-            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="restartDashboard()" style="max-width: 300px;">
-                    🔄 Restart Dashboard
-                </button>
-                <button class="btn btn-warning" onclick="showExitModal()" style="max-width: 300px;">
-                    🛑 Exit Dashboard
-                </button>
+                </div>
             </div>
         </div>
     </div>
