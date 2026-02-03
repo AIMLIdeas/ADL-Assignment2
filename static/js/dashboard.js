@@ -449,7 +449,7 @@ function displayFilteredResults(images, count) {
     outputDiv.style.display = 'block';
     gridDiv.innerHTML = '';
     
-    if (images.length === 0) {
+    if (!images || images.length === 0) {
         gridDiv.innerHTML = '<p style="padding: 20px; text-align: center; color: #666;">No images match the specified filters.</p>';
         return;
     }
