@@ -341,3 +341,91 @@ tr:hover {
     cursor: pointer;
     transition: all 0.3s ease;
 }
+/* Filter Builder Styles */
+.filter-builder {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.filter-builder h3 {
+    color: #667eea;
+    margin-bottom: 15px;
+}
+
+.filter-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    background: white;
+}
+
+.filter-table th {
+    background: #667eea;
+    color: white;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.filter-table td {
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.filter-table select,
+.filter-table input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.filter-table .remove-row-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s ease;
+}
+
+.filter-table .remove-row-btn:hover {
+    background: #c82333;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.results-grid img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.results-grid img:hover {
+    transform: scale(1.05);
+}
+
+#filterOutput {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+#filterOutput h3 {
+    color: #667eea;
+    margin-bottom: 15px;
+}

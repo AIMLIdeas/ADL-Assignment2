@@ -266,3 +266,226 @@ window.onclick = function(event) {
         closeExitModal();
     }
 }
+// CelebA Attributes
+const celebaAttributes = [
+    '5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes', 'Bald',
+    'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair',
+    'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair',
+    'Heavy_Makeup', 'High_Cheekbones', 'Male', 'Mouth_Slightly_Open', 'Mustache',
+    'Narrow_Eyes', 'No_Beard', 'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline',
+    'Rosy_Cheeks', 'Sideburns', 'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings',
+    'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie', 'Young'
+];
+
+let filterRowCounter = 0;
+
+function addFilterRow() {
+    const tbody = document.getElementById('filterTableBody');
+    const row = document.createElement('tr');
+    row.id = `filter-row-${filterRowCounter}`;
+    
+    // Get already selected attributes
+    const selectedAttributes = getSelectedAttributes();
+    
+    // Filter available attributes
+    const availableAttributes = celebaAttributes.filter(attr => !selectedAttributes.includes(attr));
+    
+    if (availableAttributes.length === 0) {
+        alert('All attributes have been added to the filter!');
+        return;
+    }
+    
+    row.innerHTML = `
+        <td>
+            <select class="attribute-select" onchange="updateAvailableAttributes()">
+                <option value="">-- Select Attribute --</option>
+                ${availableAttributes.map(attr => `<option value="${attr}">${attr.replace(/_/g, ' ')}</option>`).join('')}
+            </select>
+        </td>
+        <td>
+            <select class="value-select">
+                <option value="1">Present (1)</option>
+                <option value="0">Absent (0)</option>
+            </select>
+        </td>
+        <td>
+            <select class="boolean-select">
+                <option value="AND">AND</option>
+                <option value="OR">OR</option>
+            </select>
+        </td>
+        <td>
+            <button class="remove-row-btn" onclick="removeFilterRow('filter-row-${filterRowCounter}')">Remove</button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    filterRowCounter++;
+}
+
+function removeFilterRow(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) {
+        row.remove();
+        updateAvailableAttributes();
+    }
+}
+
+function getSelectedAttributes() {
+    const selects = document.querySelectorAll('.attribute-select');
+    const selected = [];
+    selects.forEach(select => {
+        if (select.value) {
+            selected.push(select.value);
+        }
+    });
+    return selected;
+}
+
+function updateAvailableAttributes() {
+    const selectedAttributes = getSelectedAttributes();
+    const selects = document.querySelectorAll('.attribute-select');
+    
+    selects.forEach(select => {
+        const currentValue = select.value;
+        const availableAttributes = celebaAttributes.filter(attr => 
+            !selectedAttributes.includes(attr) || attr === currentValue
+        );
+        
+        // Rebuild options
+        const options = ['<option value="">-- Select Attribute --</option>'];
+        availableAttributes.forEach(attr => {
+            const selected = attr === currentValue ? 'selected' : '';
+            options.push(`<option value="${attr}" ${selected}>${attr.replace(/_/g, ' ')}</option>`);
+        });
+        select.innerHTML = options.join('');
+    });
+}
+
+function applyFilters() {
+    const rows = document.querySelectorAll('#filterTableBody tr');
+    
+    if (rows.length === 0) {
+        alert('Please add at least one filter row!');
+        return;
+    }
+    
+    const filters = [];
+    let hasEmptyAttribute = false;
+    
+    rows.forEach((row, index) => {
+        const attribute = row.querySelector('.attribute-select').value;
+        const value = row.querySelector('.value-select').value;
+        const boolean = row.querySelector('.boolean-select').value;
+        
+        if (!attribute) {
+            hasEmptyAttribute = true;
+            return;
+        }
+        
+        filters.push({
+            attribute: attribute,
+            value: parseInt(value),
+            boolean: index < rows.length - 1 ? boolean : null // Ignore last row boolean
+        });
+    });
+    
+    if (hasEmptyAttribute) {
+        alert('Please select an attribute for all filter rows!');
+        return;
+    }
+    
+    if (filters.length === 0) {
+        alert('Please add at least one valid filter!');
+        return;
+    }
+    
+    // Show loading status
+    const statusDiv = document.getElementById('vizStatus');
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = '🔄 Applying filters and loading images...';
+    
+    // Send request to backend
+    fetch('/api/filter_faces', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ filters: filters })
+    })
+    .then(response => {
+        // Check if response is OK and is JSON
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`Server error: ${response.status} - ${text.substring(0, 100)}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            displayFilteredResults(data.images, data.count);
+            statusDiv.innerHTML = `✅ Found ${data.count} matching faces!`;
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        } else {
+            statusDiv.innerHTML = '❌ Error: ' + (data.message || 'Unknown error');
+            if (data.traceback) {
+                console.error('Server traceback:', data.traceback);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        statusDiv.innerHTML = '❌ Error: ' + error.message;
+    });
+}
+
+function displayFilteredResults(images, count) {
+    const outputDiv = document.getElementById('filterOutput');
+    const gridDiv = document.getElementById('filterResultsGrid');
+    
+    outputDiv.style.display = 'block';
+    gridDiv.innerHTML = '';
+    
+    if (images.length === 0) {
+        gridDiv.innerHTML = '<p style="padding: 20px; text-align: center; color: #666;">No images match the specified filters.</p>';
+        return;
+    }
+    
+    images.forEach(imgData => {
+        const img = document.createElement('img');
+        img.src = `data:image/png;base64,${imgData}`;
+        img.alt = 'Filtered face';
+        gridDiv.appendChild(img);
+    });
+}
+
+function clearFilters() {
+    const tbody = document.getElementById('filterTableBody');
+    tbody.innerHTML = '';
+    filterRowCounter = 0;
+    
+    const statusDiv = document.getElementById('vizStatus');
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = '✅ Filters cleared!';
+    setTimeout(() => {
+        statusDiv.style.display = 'none';
+    }, 2000);
+}
+
+function clearOutput() {
+    const outputDiv = document.getElementById('filterOutput');
+    const gridDiv = document.getElementById('filterResultsGrid');
+    
+    outputDiv.style.display = 'none';
+    gridDiv.innerHTML = '';
+    
+    const statusDiv = document.getElementById('vizStatus');
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = '✅ Output cleared!';
+    setTimeout(() => {
+        statusDiv.style.display = 'none';
+    }, 2000);
+}

@@ -47,13 +47,39 @@
                 <div id="visualization" class="tab-pane">
                     <div class="queue-status">
                         <h2>🖼️ Data Visualization</h2>
-                        <p>Explore CelebA dataset with different filters</p>
-                        <div class="controls">
-                            <button class="btn btn-primary" onclick="visualizeData('training_samples')">📸 View Training Samples</button>
-                            <button class="btn btn-primary" onclick="visualizeData('smiling_faces')">😊 View Smiling Faces</button>
-                            <button class="btn btn-primary" onclick="visualizeData('filtered_samples')">👓 View Filtered Samples</button>
+                        <p>Explore CelebA dataset with dynamic attribute filters</p>
+                        
+                        <div class="filter-builder">
+                            <h3>🔍 Build Custom Filter</h3>
+                            
+                            <div class="controls" style="margin-bottom: 15px;">
+                                <button class="btn btn-success" onclick="addFilterRow()">➕ Add Filter Row</button>
+                                <button class="btn btn-primary" onclick="applyFilters()">👓 View Filtered Faces</button>
+                                <button class="btn btn-warning" onclick="clearFilters()">🗑️ Clear Filters</button>
+                                <button class="btn btn-danger" onclick="clearOutput()">❌ Clear Output</button>
+                            </div>
+                            
+                            <table id="filterTable" class="filter-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40%;">Attribute</th>
+                                        <th style="width: 20%;">Value</th>
+                                        <th style="width: 20%;">Boolean</th>
+                                        <th style="width: 20%;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="filterTableBody">
+                                    <!-- Dynamic rows will be added here -->
+                                </tbody>
+                            </table>
                         </div>
+                        
                         <div id="vizStatus" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; display: none;"></div>
+                        
+                        <div id="filterOutput" style="margin-top: 20px; display: none;">
+                            <h3>Filtered Results</h3>
+                            <div id="filterResultsGrid" class="results-grid"></div>
+                        </div>
                     </div>
                 </div>
                 
