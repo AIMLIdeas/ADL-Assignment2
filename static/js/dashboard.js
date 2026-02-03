@@ -309,12 +309,6 @@ function addFilterRow() {
             </select>
         </td>
         <td>
-            <select class="boolean-select">
-                <option value="AND">AND</option>
-                <option value="OR">OR</option>
-            </select>
-        </td>
-        <td>
             <button class="remove-row-btn" onclick="removeFilterRow('filter-row-${filterRowCounter}')">Remove</button>
         </td>
     `;
@@ -376,7 +370,6 @@ function applyFilters() {
     rows.forEach((row, index) => {
         const attribute = row.querySelector('.attribute-select').value;
         const value = row.querySelector('.value-select').value;
-        const boolean = row.querySelector('.boolean-select').value;
         
         if (!attribute) {
             hasEmptyAttribute = true;
@@ -385,8 +378,7 @@ function applyFilters() {
         
         filters.push({
             attribute: attribute,
-            value: parseInt(value),
-            boolean: index < rows.length - 1 ? boolean : null // Ignore last row boolean
+            value: parseInt(value)
         });
     });
     
@@ -400,10 +392,16 @@ function applyFilters() {
         return;
     }
     
-    // Show loading status
+    // Show loading status with filter details
     const statusDiv = document.getElementById('vizStatus');
     statusDiv.style.display = 'block';
-    statusDiv.innerHTML = '🔄 Applying filters and loading images...';
+    
+    // Display applied filters
+    const filterDesc = filters.map(f => `${f.attribute.replace(/_/g, ' ')} = ${f.value === 1 ? 'Present' : 'Absent'}`).join(' AND ');
+    statusDiv.innerHTML = `🔄 Applying filters: <strong>${filterDesc}</strong><br>Loading images...`;
+    
+    // Log filters being sent
+    console.log('Sending filters to backend:', filters);
     
     // Send request to backend
     fetch('/api/filter_faces', {
@@ -423,12 +421,14 @@ function applyFilters() {
         return response.json();
     })
     .then(data => {
+        console.log('Backend response:', data);
         if (data.status === 'success') {
-            displayFilteredResults(data.images, data.count);
-            statusDiv.innerHTML = `✅ Found ${data.count} matching faces!`;
+            const filterDesc = filters.map(f => `${f.attribute.replace(/_/g, ' ')} = ${f.value === 1 ? 'Present' : 'Absent'}`).join(' AND ');
+            displayFilteredResults(data.images, data.count, filterDesc);
+            statusDiv.innerHTML = `✅ Found ${data.count} matching faces with filters: <strong>${filterDesc}</strong>`;
             setTimeout(() => {
                 statusDiv.style.display = 'none';
-            }, 3000);
+            }, 5000);
         } else {
             statusDiv.innerHTML = '❌ Error: ' + (data.message || 'Unknown error');
             if (data.traceback) {
@@ -442,24 +442,47 @@ function applyFilters() {
     });
 }
 
-function displayFilteredResults(images, count) {
+function displayFilteredResults(images, count, filterDescription) {
     const outputDiv = document.getElementById('filterOutput');
     const gridDiv = document.getElementById('filterResultsGrid');
     
     outputDiv.style.display = 'block';
+    
+    // Clear and add filter description
     gridDiv.innerHTML = '';
     
+    if (filterDescription) {
+        const filterInfo = document.createElement('div');
+        filterInfo.style.cssText = 'padding: 15px; margin-bottom: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+        filterInfo.innerHTML = `
+            <h4 style="margin: 0 0 10px 0; font-size: 18px;">🔍 Applied Filters</h4>
+            <p style="margin: 0; font-size: 16px;"><strong>${filterDescription}</strong></p>
+            <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.9;">Found ${count} matching faces (showing first ${images ? images.length : 0})</p>
+        `;
+        gridDiv.appendChild(filterInfo);
+    }
+    
     if (!images || images.length === 0) {
-        gridDiv.innerHTML = '<p style="padding: 20px; text-align: center; color: #666;">No images match the specified filters.</p>';
+        const noResults = document.createElement('p');
+        noResults.style.cssText = 'padding: 20px; text-align: center; color: #666;';
+        noResults.textContent = 'No images match the specified filters.';
+        gridDiv.appendChild(noResults);
         return;
     }
+    
+    // Create image grid container
+    const imageGrid = document.createElement('div');
+    imageGrid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;';
     
     images.forEach(imgData => {
         const img = document.createElement('img');
         img.src = `data:image/png;base64,${imgData}`;
         img.alt = 'Filtered face';
-        gridDiv.appendChild(img);
+        img.style.cssText = 'width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
+        imageGrid.appendChild(img);
     });
+    
+    gridDiv.appendChild(imageGrid);
 }
 
 function clearFilters() {
