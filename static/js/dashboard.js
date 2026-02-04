@@ -454,10 +454,41 @@ function displayFilteredResults(images, count, filterDescription) {
     if (filterDescription) {
         const filterInfo = document.createElement('div');
         filterInfo.style.cssText = 'padding: 15px; margin-bottom: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+        
+        // Get the filters from the UI to display details
+        const rows = document.querySelectorAll('#filterTableBody tr');
+        const filterDetails = [];
+        rows.forEach(row => {
+            const attribute = row.querySelector('.attribute-select').value;
+            const value = row.querySelector('.value-select').value;
+            if (attribute) {
+                filterDetails.push({
+                    attr: attribute,
+                    val: value
+                });
+            }
+        });
+        
+        // Build detailed filter list
+        let detailsHTML = '';
+        if (filterDetails.length > 0) {
+            detailsHTML = '<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3);">';
+            detailsHTML += '<p style="margin: 0 0 8px 0; font-size: 14px; font-weight: bold;">Filter Details:</p>';
+            detailsHTML += '<ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">';
+            filterDetails.forEach((f, index) => {
+                const displayName = f.attr.replace(/_/g, ' ');
+                const displayValue = f.val === '1' ? 'Present (1)' : 'Absent (0)';
+                detailsHTML += `<li><strong>${displayName}</strong>: ${displayValue}</li>`;
+            });
+            detailsHTML += '</ul>';
+            detailsHTML += '</div>';
+        }
+        
         filterInfo.innerHTML = `
             <h4 style="margin: 0 0 10px 0; font-size: 18px;">🔍 Applied Filters</h4>
             <p style="margin: 0; font-size: 16px;"><strong>${filterDescription}</strong></p>
             <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.9;">Found ${count} matching faces (showing first ${images ? images.length : 0})</p>
+            ${detailsHTML}
         `;
         gridDiv.appendChild(filterInfo);
     }
