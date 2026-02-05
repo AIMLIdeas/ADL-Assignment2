@@ -28,7 +28,48 @@ function switchTab(tabId) {
     
     // Store active tab in localStorage
     localStorage.setItem('activeTab', tabId);
+    
+    // Update filter status display when switching to training tab
+    if (tabId === 'model-training') {
+        updateTrainingFilterDisplay();
+    }
 }
+
+// Global variable to store active training filters
+let activeTrainingFilters = null;
+
+// Update the training filter display
+function updateTrainingFilterDisplay() {
+    const statusDiv = document.getElementById('activeFilterStatus');
+    const descDiv = document.getElementById('activeFilterDescription');
+    
+    if (activeTrainingFilters && activeTrainingFilters.length > 0) {
+        const filterDesc = activeTrainingFilters.map(f => 
+            `<strong>${f.attribute.replace(/_/g, ' ')}</strong> = ${f.value === 1 ? 'Present' : 'Absent'}`
+        ).join(' AND ');
+        
+        descDiv.innerHTML = `
+            <p style="margin: 0 0 5px 0;">Models will be trained on filtered dataset:</p>
+            <p style="margin: 0; font-weight: 500;">${filterDesc}</p>
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #777;">
+                (Filters applied from Visualization tab)
+            </p>
+        `;
+        statusDiv.style.display = 'block';
+    } else {
+        statusDiv.style.display = 'none';
+    }
+}
+
+// Clear training filters
+function clearTrainingFilters() {
+    activeTrainingFilters = null;
+    updateTrainingFilterDisplay();
+    alert('✓ Filters cleared. Models will now train on the full dataset.');
+}
+
+// Status refresh interval
+let statusInterval;
 
 // Restore active tab on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -36,6 +77,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (savedTab) {
         switchTab(savedTab);
     }
+    
+    // Start automatic status refresh
+    refreshStatus();
+    statusInterval = setInterval(refreshStatus, 180000); // Refresh every 3 minutes
 });
 
 function queueModel(modelName) {
@@ -64,6 +109,12 @@ function queueModel(modelName) {
         config.batch_size = parseInt(document.getElementById('vqvae_batch_size').value);
     }
     
+    // Add active filters to config
+    if (activeTrainingFilters && activeTrainingFilters.length > 0) {
+        config.filters = activeTrainingFilters;
+        console.log('Adding filters to training config:', activeTrainingFilters);
+    }
+    
     fetch('/queue_model', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -71,8 +122,11 @@ function queueModel(modelName) {
     })
     .then(response => response.json())
     .then(data => {
-        alert(`${modelName} added to queue! Job ID: ${data.job_id}`);
-        refreshStatus();
+        const filterMsg = activeTrainingFilters && activeTrainingFilters.length > 0 
+            ? ' (with filters)' 
+            : '';
+        alert(`${modelName} added to queue${filterMsg}! Job ID: ${data.job_id}`);
+        // Status will be refreshed automatically by the interval
     });
 }
 
@@ -104,7 +158,7 @@ function startQueue() {
         .then(response => response.json())
         .then(data => {
             alert(data.message);
-            refreshStatus();
+            // Status will be refreshed automatically by the interval
         });
 }
 
@@ -113,7 +167,7 @@ function stopQueue() {
         .then(response => response.json())
         .then(data => {
             alert(data.message);
-            refreshStatus();
+            // Status will be refreshed automatically by the interval
         });
 }
 
@@ -254,10 +308,6 @@ function refreshComparison() {
             statusDiv.innerHTML = '❌ Error: ' + error;
         });
 }
-
-// Refresh status every 1 minute (60 seconds)
-const statusInterval = setInterval(refreshStatus, 60000);
-refreshStatus();
 
 // Close modal when clicking outside
 window.onclick = function(event) {
@@ -426,6 +476,36 @@ function applyFilters() {
             const filterDesc = filters.map(f => `${f.attribute.replace(/_/g, ' ')} = ${f.value === 1 ? 'Present' : 'Absent'}`).join(' AND ');
             displayFilteredResults(data.images, data.count, filterDesc);
             statusDiv.innerHTML = `✅ Found ${data.count} matching faces with filters: <strong>${filterDesc}</strong>`;
+            
+            // Store filters for training
+            activeTrainingFilters = filters;
+            console.log('Stored filters for training:', activeTrainingFilters);
+            
+            // Show notification
+            setTimeout(() => {
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #4caf50;
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    z-index: 10000;
+                    font-weight: 500;
+                `;
+                notification.innerHTML = '✓ Filters saved! Go to Model Training tab to train with this filtered dataset.';
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.transition = 'opacity 0.5s';
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 500);
+                }, 3000);
+            }, 100);
+            
             setTimeout(() => {
                 statusDiv.style.display = 'none';
             }, 5000);
@@ -521,9 +601,13 @@ function clearFilters() {
     tbody.innerHTML = '';
     filterRowCounter = 0;
     
+    // Also clear training filters
+    activeTrainingFilters = null;
+    updateTrainingFilterDisplay();
+    
     const statusDiv = document.getElementById('vizStatus');
     statusDiv.style.display = 'block';
-    statusDiv.innerHTML = '✅ Filters cleared!';
+    statusDiv.innerHTML = '✅ Filters cleared! (Both visualization and training filters)';
     setTimeout(() => {
         statusDiv.style.display = 'none';
     }, 2000);
