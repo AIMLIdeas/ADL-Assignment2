@@ -587,7 +587,8 @@ function displayFilteredResults(images, count, filterDescription) {
     
     images.forEach(imgData => {
         const img = document.createElement('img');
-        img.src = `data:image/png;base64,${imgData}`;
+        // imgData already includes the full data URL with prefix from backend
+        img.src = imgData;
         img.alt = 'Filtered face';
         img.style.cssText = 'width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
         imageGrid.appendChild(img);
@@ -627,3 +628,175 @@ function clearOutput() {
         statusDiv.style.display = 'none';
     }, 2000);
 }
+
+// ============================================================================
+// TRAINED MODELS MANAGEMENT
+// ============================================================================
+
+let allTrainedModels = [];
+
+async function loadTrainedModels() {
+    const container = document.getElementById('trainedModelsContainer');
+    
+    // Clear existing content and show loading state
+    container.innerHTML = `
+        <div style="text-align: center; padding: 30px;">
+            <div style="font-size: 24px; margin-bottom: 10px;">🔄</div>
+            <p style="color: #666;">Loading trained models...</p>
+        </div>
+    `;
+    
+    // Clear the models array
+    allTrainedModels = [];
+    
+    // Reset filter dropdown to "All Models"
+    const filterDropdown = document.getElementById('modelTypeFilter');
+    if (filterDropdown) {
+        filterDropdown.value = 'all';
+    }
+    
+    try {
+        const response = await fetch('/api/trained_models');
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            allTrainedModels = data.models;
+            
+            // Show count message
+            const countMsg = document.createElement('div');
+            countMsg.style.cssText = 'padding: 10px; margin-bottom: 15px; background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px;';
+            countMsg.innerHTML = `✓ Found <strong>${data.total_count || data.models.length}</strong> trained model(s)`;
+            
+            container.innerHTML = '';
+            container.appendChild(countMsg);
+            
+            // Display the models
+            const tableContainer = document.createElement('div');
+            container.appendChild(tableContainer);
+            
+            displayTrainedModels(allTrainedModels, tableContainer);
+        } else {
+            container.innerHTML = `<p style="text-align: center; color: #d32f2f;">Error: ${data.message}</p>`;
+        }
+    } catch (error) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 30px;">
+                <div style="font-size: 24px; margin-bottom: 10px; color: #d32f2f;">❌</div>
+                <p style="color: #d32f2f;">Error loading models: ${error.message}</p>
+                <button class="btn btn-primary" onclick="loadTrainedModels()" style="margin-top: 15px; width: auto; padding: 8px 16px;">
+                    Try Again
+                </button>
+            </div>
+        `;
+    }
+}
+
+function displayTrainedModels(models, targetContainer) {
+    const container = targetContainer || document.getElementById('trainedModelsContainer');
+    
+    if (models.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 30px;">
+                <div style="font-size: 48px; margin-bottom: 15px; opacity: 0.3;">📦</div>
+                <p style="color: #666; font-size: 16px;">No trained models found.</p>
+                <p style="color: #999; font-size: 14px;">Train some models to see them here!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Create table
+    const table = document.createElement('table');
+    table.className = 'comparison-table';
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>Model Type</th>
+                <th>Experiment ID</th>
+                <th>Training Date</th>
+                <th>Duration</th>
+                <th>Epochs</th>
+                <th>Location</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    `;
+    
+    const tbody = table.querySelector('tbody');
+    
+    models.forEach(model => {
+        const row = document.createElement('tr');
+        
+        // Use date string directly (already formatted by backend)
+        const dateStr = model.date || 'N/A';
+        
+        // Use duration string directly (already formatted by backend)
+        const durationStr = model.duration || 'N/A';
+        
+        // Format epochs
+        const epochsStr = model.epochs !== undefined && model.epochs !== 'N/A' 
+            ? model.epochs.toString() 
+            : 'N/A';
+        
+        // Use experiment_id
+        const experimentId = model.experiment_id || 'Unknown';
+        
+        // Truncate location for display
+        const locationShort = model.location && model.location.length > 50 
+            ? '...' + model.location.slice(-47) 
+            : (model.location || 'N/A');
+        
+        row.innerHTML = `
+            <td><strong>${model.model_type}</strong></td>
+            <td><code>${experimentId}</code></td>
+            <td>${dateStr}</td>
+            <td>${durationStr}</td>
+            <td>${epochsStr}</td>
+            <td style="font-size: 12px; font-family: monospace;" title="${model.location}">${locationShort}</td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+    
+    // Clear container if not specified, otherwise append
+    if (!targetContainer) {
+        container.innerHTML = '';
+    } else {
+        container.innerHTML = '';
+    }
+    container.appendChild(table);
+}
+
+function filterTrainedModels() {
+    const filterValue = document.getElementById('modelTypeFilter').value;
+    
+    // Get the table container (second child of trainedModelsContainer)
+    const mainContainer = document.getElementById('trainedModelsContainer');
+    const tableContainer = mainContainer.children[1];
+    
+    if (filterValue === 'all') {
+        displayTrainedModels(allTrainedModels, tableContainer);
+    } else {
+        const filtered = allTrainedModels.filter(model => 
+            model.model_type === filterValue || 
+            model.model_type.includes(filterValue)
+        );
+        displayTrainedModels(filtered, tableContainer);
+    }
+}
+
+// Load trained models when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Load models on initial page load
+    loadTrainedModels();
+    
+    // Re-load when switching to the trained models tab
+    const originalSwitchTab = switchTab;
+    switchTab = function(tabId) {
+        originalSwitchTab(tabId);
+        if (tabId === 'trained-models') {
+            loadTrainedModels();
+        }
+    };
+});
